@@ -18,11 +18,11 @@ function TrafficCar({ position, onCollision, playerPosition, gameStarted, color,
   useFrame(() => {
     if (!groupRef.current || !playerPosition || !gameStarted) return;
 
-    // Faster speeds for both directions
+    // Oncoming cars move toward player (+Z), same direction cars move away (-Z but slower than player)
     if (isOncoming) {
-      localZRef.current += carSpeed * 2.0; // Oncoming even faster
+      localZRef.current += carSpeed * 2.0; // Oncoming moves toward player
     } else {
-      localZRef.current += carSpeed * 0.5; // Same direction slightly slower
+      localZRef.current -= carSpeed * 0.3; // Same direction moves forward (slower than player, so player catches up)
     }
 
     const carWorldZ = localZRef.current;
@@ -42,8 +42,9 @@ function TrafficCar({ position, onCollision, playerPosition, gameStarted, color,
     onUpdateZ(localZRef.current);
   });
 
-  // Right side cars (same direction): no rotation, player sees taillights (rear at +Z toward player)
-  // Left side cars (oncoming): rotate 180°, player sees headlights (front at +Z toward player)
+  // Car model: front at +Z, rear at -Z
+  // Right side cars (same direction as player): 180° rotation - rear faces +Z (toward player behind)
+  // Left side cars (oncoming): 0° rotation - front faces +Z (toward player ahead)
   const rotation = isOncoming ? 0 : Math.PI;
 
   return (
@@ -76,26 +77,35 @@ function TrafficCar({ position, onCollision, playerPosition, gameStarted, color,
           <boxGeometry args={[0.25, 0.12, 0.02]} />
           <meshStandardMaterial color="#ffffff" emissive="#ffffcc" emissiveIntensity={5} />
         </mesh>
-        {/* Headlight beam */}
+        {/* Two headlight beams - one per lamp */}
         <spotLight
-          position={[0, 0.35, 1.8]}
-          angle={0.6}
+          position={[-0.45, 0.35, 1.8]}
+          angle={0.5}
           penumbra={0.5}
-          intensity={8}
-          distance={25}
+          intensity={5}
+          distance={20}
           color="#ffffee"
         />
-        {/* Taillights - rear (bright red glow) */}
+        <spotLight
+          position={[0.45, 0.35, 1.8]}
+          angle={0.5}
+          penumbra={0.5}
+          intensity={5}
+          distance={20}
+          color="#ffffee"
+        />
+        {/* Taillights - rear (red cubes with glow) */}
         <mesh position={[-0.45, 0.35, -1.61]}>
-          <boxGeometry args={[0.25, 0.12, 0.02]} />
-          <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={5} />
+          <boxGeometry args={[0.2, 0.15, 0.1]} />
+          <meshStandardMaterial color="#cc0000" emissive="#ff0000" emissiveIntensity={2} />
         </mesh>
         <mesh position={[0.45, 0.35, -1.61]}>
-          <boxGeometry args={[0.25, 0.12, 0.02]} />
-          <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={5} />
+          <boxGeometry args={[0.2, 0.15, 0.1]} />
+          <meshStandardMaterial color="#cc0000" emissive="#ff0000" emissiveIntensity={2} />
         </mesh>
-        {/* Taillight glow */}
-        <pointLight position={[0, 0.35, -1.8]} intensity={3} distance={8} color="#ff0000" />
+        {/* Two taillight glows - one per lamp */}
+        <pointLight position={[-0.45, 0.35, -1.8]} intensity={2} distance={6} color="#ff0000" />
+        <pointLight position={[0.45, 0.35, -1.8]} intensity={2} distance={6} color="#ff0000" />
       </group>
     </group>
   );
@@ -111,12 +121,14 @@ export default function Obstacles({ speed, onCollision, playerPosition, gameStar
     const rightLanes = [1.2, 3.5];
     const leftLanes = [-3.5, -1.2];
     
+    // Spawn cars evenly - alternate between oncoming and same direction
     for (let i = 0; i < CAR_COUNT; i++) {
-      const isOncoming = i < CAR_COUNT / 2;
+      const isOncoming = i % 2 === 0; // Alternate
       const lanes = isOncoming ? leftLanes : rightLanes;
       const lane = lanes[Math.floor(Math.random() * lanes.length)];
       const color = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
-      const z = -25 - i * CAR_SPACING - Math.random() * 10;
+      // Spread cars evenly, starting close to player
+      const z = -15 - i * (CAR_SPACING / 2) - Math.random() * 8;
       initialCars.push({ id: i, x: lane, z, color, isOncoming });
       carZRefs.current[i] = z;
     }

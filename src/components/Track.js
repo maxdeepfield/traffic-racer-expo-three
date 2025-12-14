@@ -90,11 +90,9 @@ export default function Track({ speed, playerPosition }) {
         </group>
       ))}
 
-      {/* Street lights - only 1 per segment to reduce light count */}
-      {segments.map((seg, segIdx) => {
-        const lightZ = seg.z - 30;
-        // Only render lights for every other segment
-        if (segIdx % 2 !== 0) return null;
+      {/* Street lights - 1 per segment */}
+      {segments.map((seg) => {
+        const lightZ = seg.z - trackLength / 2;
         return (
           <group key={`lights-${seg.id}`}>
             {/* Left light pole */}
@@ -108,9 +106,11 @@ export default function Track({ speed, playerPosition }) {
             </mesh>
             {/* Light bulb glow */}
             <mesh position={[-trackWidth / 2 - 0.5, 5.6, lightZ]}>
-              <sphereGeometry args={[0.3, 8, 8]} />
-              <meshStandardMaterial color="#ffffee" emissive="#ffeeaa" emissiveIntensity={8} />
+              <sphereGeometry args={[0.4, 8, 8]} />
+              <meshStandardMaterial color="#ffffee" emissive="#ffeeaa" emissiveIntensity={10} />
             </mesh>
+            {/* Street lamp light source */}
+            <pointLight position={[-trackWidth / 2 - 0.5, 5.5, lightZ]} intensity={4} distance={25} color="#ffeecc" />
             
             {/* Right light pole */}
             <mesh position={[trackWidth / 2 + 2, 3, lightZ]}>
@@ -123,9 +123,11 @@ export default function Track({ speed, playerPosition }) {
             </mesh>
             {/* Light bulb glow */}
             <mesh position={[trackWidth / 2 + 0.5, 5.6, lightZ]}>
-              <sphereGeometry args={[0.3, 8, 8]} />
-              <meshStandardMaterial color="#ffffee" emissive="#ffeeaa" emissiveIntensity={8} />
+              <sphereGeometry args={[0.4, 8, 8]} />
+              <meshStandardMaterial color="#ffffee" emissive="#ffeeaa" emissiveIntensity={10} />
             </mesh>
+            {/* Street lamp light source */}
+            <pointLight position={[trackWidth / 2 + 0.5, 5.5, lightZ]} intensity={4} distance={25} color="#ffeecc" />
           </group>
         );
       })}

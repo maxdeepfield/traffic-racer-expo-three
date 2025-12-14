@@ -75,7 +75,7 @@ export default function Coins({ speed, onCollect, playerPosition, gameStarted = 
   };
 
   useFrame(() => {
-    if (!playerPosition) return;
+    if (!playerPosition || !gameStarted) return;
 
     setCoins(prev => {
       const playerZ = playerPosition.z;

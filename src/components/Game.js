@@ -6,7 +6,7 @@ import Track from './Track';
 import Obstacles from './Obstacles';
 import Coins from './Coins';
 
-export default function Game({ steerX = 0, onScoreUpdate, onGameOver }) {
+export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
   const [gameState, setGameState] = useState({
     score: 0,
     gameOver: false,
@@ -104,7 +104,7 @@ export default function Game({ steerX = 0, onScoreUpdate, onGameOver }) {
         ref={playerRef}
         position={[0, 0.5, 0]}
         speed={gameState.speed}
-        steerX={steerX}
+        lane={lane}
         onGameOver={handleGameOver}
       />
 
