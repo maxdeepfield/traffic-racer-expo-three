@@ -5,4 +5,4 @@ export const WORLD_TREE_COLORS = [
   '#2E8B57', // Sea Green
   '#3CB371', // Medium Sea Green
   '#20B2AA', // Light Sea Green
-];
+] as const;

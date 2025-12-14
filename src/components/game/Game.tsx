@@ -1,32 +1,37 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import Player from './Player';
-import Track from './Track';
-import Obstacles from './Obstacles';
-import Coins from './Coins';
+import { Player } from '../player';
+import { Track } from '../track';
+import { Obstacles } from '../obstacles';
+import { Coins } from '../coins';
+import { GameScene } from './GameScene';
+import type { GameState, PlayerRef } from '../../types';
 
-export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
-  const [gameState, setGameState] = useState({
-    score: 0,
-    gameOver: false,
-    speed: 0.15,
-    paused: false,
-  });
+interface GameProps {
+  lane?: number;
+  onScoreUpdate?: (score: number) => void;
+  onGameOver?: () => void;
+}
 
+const INITIAL_STATE: GameState = {
+  score: 0,
+  gameOver: false,
+  speed: 0.15,
+  paused: false,
+};
+
+const Game: React.FC<GameProps> = ({ lane = 1, onScoreUpdate, onGameOver }) => {
+  const [gameState, setGameState] = useState<GameState>(INITIAL_STATE);
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(0, 0.5, 0));
   const [gameStarted, setGameStarted] = useState(false);
+
   const { camera } = useThree();
-  const playerRef = useRef();
+  const playerRef = useRef<PlayerRef>(null);
   const startDelayRef = useRef(0);
 
   useEffect(() => {
-    setGameState({
-      score: 0,
-      gameOver: false,
-      speed: 0.15,
-      paused: false,
-    });
+    setGameState(INITIAL_STATE);
     setPlayerPosition(new THREE.Vector3(0, 0.5, 0));
     setGameStarted(false);
     startDelayRef.current = 0;
@@ -40,7 +45,7 @@ export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (gameState.gameOver || gameState.paused) return;
 
     startDelayRef.current += delta;
@@ -49,12 +54,10 @@ export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
     }
 
     if (playerRef.current) {
-      const getWorldPos = playerRef.current.getWorldPosition;
-      let pos = getWorldPos ? getWorldPos() : playerRef.current.position;
+      const pos = playerRef.current.getWorldPosition();
       const worldPos = new THREE.Vector3(pos.x, pos.y, pos.z);
       setPlayerPosition(worldPos.clone());
 
-      // Camera follows behind and above player
       const targetCameraPos = new THREE.Vector3(worldPos.x * 0.3, worldPos.y + 6, worldPos.z + 12);
       const lookAheadPos = new THREE.Vector3(worldPos.x * 0.5, worldPos.y + 1, worldPos.z - 15);
 
@@ -64,10 +67,9 @@ export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
 
     setGameState(prev => {
       if (prev.gameOver || prev.paused) return prev;
-      // Double points when on left side (oncoming traffic lanes, x < 0)
       const multiplier = playerPosition.x < 0 ? 2 : 1;
       const newScore = prev.score + delta * 15 * (1 + prev.speed * 2) * multiplier;
-      if (onScoreUpdate) onScoreUpdate(Math.floor(newScore));
+      onScoreUpdate?.(Math.floor(newScore));
       return {
         ...prev,
         speed: Math.min(prev.speed + delta * 0.002, 0.4),
@@ -78,7 +80,7 @@ export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
 
   const handleGameOver = () => {
     setGameState(prev => ({ ...prev, gameOver: true }));
-    if (onGameOver) onGameOver();
+    onGameOver?.();
   };
 
   const handleCoinCollect = () => {
@@ -87,25 +89,13 @@ export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
 
   return (
     <>
-      {/* Sky gradient effect */}
-      <color attach="background" args={['#1a1a2e']} />
-      
-      {/* Ground plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, playerPosition.z - 500]}>
-        <planeGeometry args={[200, 1500]} />
-        <meshStandardMaterial color="#1a3d1a" />
-      </mesh>
-
-      {/* Lighting - no shadows for performance */}
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[10, 30, 10]} intensity={0.6} />
+      <GameScene playerPosition={playerPosition} />
 
       <Player
         ref={playerRef}
         position={[0, 0.5, 0]}
         speed={gameState.speed}
         lane={lane}
-        onGameOver={handleGameOver}
       />
 
       <Track speed={gameState.speed} playerPosition={playerPosition} />
@@ -125,4 +115,6 @@ export default function Game({ lane = 1, onScoreUpdate, onGameOver }) {
       />
     </>
   );
-}
+};
+
+export default Game;
